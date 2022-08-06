@@ -1,0 +1,35 @@
+add_llvm_component_group(MYRISCVX)
+set(LLVM_TARGET_DEFINITIONS MYRISCVX.td)
+
+# MYRISCVXGenRegisterInfo.incを生成
+tablegen(LLVM MYRISCVXGenRegisterInfo.inc -gen-register-info)
+# MYRISCVXGenInstrInfo.incを生成
+tablegen(LLVM MYRISCVXGenInstrInfo.inc -gen-instr-info)
+# MYRISCVXGenSubtargetInfo.incを生成
+tablegen(LLVM MYRISCVXGenSubtargetInfo.inc -gen-subtarget)
+# MYRISCVXGenMCPseudoLowering.incを生成
+tablegen(LLVM MYRISCVXGenMCPseudoLowering.inc -gen-pseudo-lowering)
+
+# MYRISCVXGenCallingConv.incを生成
+tablegen(LLVM MYRISCVXGenCallingConv.inc -gen-callingconv)
+
+add_public_tablegen_target(MYRISCVXCommonTableGen)
+
+add_llvm_target(MYRISCVXCodeGen
+    MYRISCVXTargetMachine.cpp
+    MYRISCVXSubtarget.cpp
+    MYRISCVXRegisterInfo.cpp
+    MYRISCVXFrameLowering.cpp
+    MYRISCVXInstrInfo.cpp
+    MYRISCVXISelLowering.cpp
+    # MYRISCVXMachineFUnction.cpp
+    MYRISCVXTargetObjectFile.cpp
+    # MYRISCVXAsmPrinter.cpp
+    # MYRISCVXMCInstLower.cpp
+    # MYRISCVXISelDAGToDAG.cpp
+    # MYRISCVXMatInt.cpp
+    # MYRISCVXExpandPseudoInsts.cpp
+)
+
+add_subdirectory(TargetInfo)
+add_subdirectory(MCTargetDesc)
