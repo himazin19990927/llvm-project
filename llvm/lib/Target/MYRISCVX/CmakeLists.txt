@@ -13,6 +13,14 @@ tablegen(LLVM MYRISCVXGenMCPseudoLowering.inc -gen-pseudo-lowering)
 # MYRISCVXGenCallingConv.incを生成
 tablegen(LLVM MYRISCVXGenCallingConv.inc -gen-callingconv)
 
+# AsmParserで使用するMatcherを生成する
+tablegen(LLVM MYRISCVXGenAsmMatcher.inc -gen-asm-matcher)
+
+tablegen(LLVM MYRISCVXGenCodeEmitter.inc -gen-emitter)
+tablegen(LLVM MYRISCVXGenMCCodeEmitter.inc -gen-emitter)
+
+tablegen(LLVM MYRISCVXGenAsmWriter.inc -gen-asm-writer)
+
 add_public_tablegen_target(MYRISCVXCommonTableGen)
 
 add_llvm_target(MYRISCVXCodeGen
@@ -22,10 +30,10 @@ add_llvm_target(MYRISCVXCodeGen
     MYRISCVXFrameLowering.cpp
     MYRISCVXInstrInfo.cpp
     MYRISCVXISelLowering.cpp
-    # MYRISCVXMachineFUnction.cpp
+    MYRISCVXMachineFunction.cpp
     MYRISCVXTargetObjectFile.cpp
-    # MYRISCVXAsmPrinter.cpp
-    # MYRISCVXMCInstLower.cpp
+    MYRISCVXAsmPrinter.cpp
+    MYRISCVXMCInstLower.cpp
     # MYRISCVXISelDAGToDAG.cpp
     # MYRISCVXMatInt.cpp
     # MYRISCVXExpandPseudoInsts.cpp

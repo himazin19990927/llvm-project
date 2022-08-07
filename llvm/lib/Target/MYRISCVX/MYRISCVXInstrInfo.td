@@ -9,7 +9,7 @@ class ArithLogicR<bits<7> opcode, bits<3> funct3, bits<7> funct7,
                 string instr_asm, SDNode OpNode,
                 RegisterClass RC> :
     MYRISCVX_R<opcode, funct3, funct7, (outs RC:$rd), (ins RC:$rs1, RC:$rs2),
-            !strconcat(instr_asm, "\t$rd, $rs1, $ts2"),
+            !strconcat(instr_asm, "\t$rd, $rs1, $rs2"),
             [(set RC:$rd, (OpNode RC:$rs1, RC:$rs2))], IIAlu>            
 {
     let isReMaterializable = 1;

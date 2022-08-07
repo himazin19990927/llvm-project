@@ -313,6 +313,7 @@ enum {
   EM_CSR_KALIMBA = 219,   // CSR Kalimba architecture family
   EM_AMDGPU = 224,        // AMD GPU architecture
   EM_RISCV = 243,         // RISC-V
+  EM_MYRISCVX = 248,      // MYRISCVX
   EM_LANAI = 244,         // Lanai 32-bit processor
   EM_BPF = 247,           // Linux kernel bpf virtual machine
   EM_VE = 251,            // NEC SX-Aurora VE
@@ -647,6 +648,21 @@ enum : unsigned {
 // ELF Relocation types for RISC-V
 enum {
 #include "ELFRelocs/RISCV.def"
+};
+
+// MYRISCVXのリロケーション情報を登録する
+enum{
+  #include "ELFRelocs/MYRISCVX.def"
+};
+
+enum : unsigned {
+  EF_MYRISCVX_RVC = 0x0001,
+  EF_MYRISCVX_FLOAT_ABI = 0x0006,
+  EF_MYRISCVX_FLOAT_ABI_SOFT = 0x0000,
+  EF_MYRISCVX_FLOAT_ABI_SINGLE = 0x0002,
+  EF_MYRISCVX_FLOAT_ABI_DOUBLE = 0x0004,
+  EF_MYRISCVX_FLOAT_ABI_QUAD = 0x0006,
+  EF_MYRISCVX_RVE = 0x0008
 };
 
 // ELF Relocation types for S390/zSeries

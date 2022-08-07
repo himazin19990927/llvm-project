@@ -21,9 +21,9 @@ Target &getTheMYRISCVX64Target() {
 
 extern "C" void LLVMInitializeMYRISCVXTargetInfo() {
   RegisterTarget<Triple::myriscvx32, true> X(
-      getTheMYRISCVX32Target(), "myriscv32", "MYRISCVX (32-bit)", "MYRISCVX");
+      getTheMYRISCVX32Target(), "myriscvx32", "MYRISCVX (32-bit)", "MYRISCVX");
   RegisterTarget<Triple::myriscvx64, true> Y(
-      getTheMYRISCVX64Target(), "myriscv64", "MYRISCVX (64-bit)", "MYRISCVX");
+      getTheMYRISCVX64Target(), "myriscvx64", "MYRISCVX (64-bit)", "MYRISCVX");
 }
 
 } // namespace llvm

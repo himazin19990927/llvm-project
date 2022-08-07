@@ -12,7 +12,7 @@ class MCContext;
 class MCInstrInfo;
 class MCObjectTargetWriter;
 class MCRegisterInfo;
-class MCSUbtargetInfo;
+class MCSubtargetInfo;
 class StringRef;
 class Target;
 class Triple;
@@ -21,6 +21,18 @@ class raw_pwrite_stream;
 
 Target &getTheMYRISCVX32Target();
 Target &getTheMYRISCVX64Target();
+
+MCCodeEmitter *createMYRISCVXMCCodeEmitter(const MCInstrInfo &MCII,
+                                           const MCRegisterInfo &MRI,
+                                           MCContext &Ctx);
+
+MCAsmBackend *createMYRISCVXAsmBackend(const Target &T,
+                                       const MCSubtargetInfo &STI,
+                                       const MCRegisterInfo &MRI,
+                                       const MCTargetOptions &Options);
+
+std::unique_ptr<MCObjectTargetWriter>
+createMYRISCVXELFObjectWriter(const Triple &TT, bool Is64Bit);
 } // namespace llvm
 
 #define GET_REGINFO_ENUM

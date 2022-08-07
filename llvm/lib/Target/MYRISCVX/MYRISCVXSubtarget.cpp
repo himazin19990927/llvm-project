@@ -44,7 +44,7 @@ MYRISCVXSubtarget &MYRISCVXSubtarget::initializeSubtargetDependencies(
     }
   } else {
     errs() << "!!!Error, TargetTriple.getArch() = " << TargetTriple.getArch()
-           << "CPU = " << CPU << '\n';
+           << " CPU = " << CPU << '\n';
     exit(0);
   }
 
