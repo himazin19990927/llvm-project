@@ -1,5 +1,13 @@
-#include "MYRISCVXABIInfo.h"
+//===---- MYRISCVXABIInfo.cpp - Information about MYRISCVX ABI's ----------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
 
+#include "MYRISCVXABIInfo.h"
 #include "MYRISCVXRegisterInfo.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
@@ -8,71 +16,80 @@
 
 using namespace llvm;
 
-static cl::opt<bool> EnableMYRISCVXLPCalls(
-    "MYRISCVX-lp32-calls", cl::Hidden,
-    cl::desc("MYRISCVX LP call: Default Integer Calling Convention"),
-    cl::init(false));
+static cl::opt<bool>
+EnableMYRISCVXLPCalls("MYRISCVX-lp32-calls", cl::Hidden,
+                      cl::desc("MYRISCVX LP call: Default Interger Calling Convention\
+                    "), cl::init(false));
 
 namespace {
-static const MCPhysReg LPIntRegs[8] = {MYRISCVX::A0, MYRISCVX::A1, MYRISCVX::A2,
-                                       MYRISCVX::A3, MYRISCVX::A4, MYRISCVX::A5,
-                                       MYRISCVX::A6, MYRISCVX::A7};
+static const MCPhysReg LPIntRegs[8] = {
+  MYRISCVX::A0, MYRISCVX::A1, MYRISCVX::A2, MYRISCVX::A3,
+  MYRISCVX::A4, MYRISCVX::A5, MYRISCVX::A6, MYRISCVX::A7};
 }
 
 ArrayRef<MCPhysReg> MYRISCVXABIInfo::GetByValArgRegs() const {
-  if (IsLP()) {
+  if (IsLP())
     return makeArrayRef(LPIntRegs);
-  }
   llvm_unreachable("Unhandled ABI");
 }
 
 ArrayRef<MCPhysReg> MYRISCVXABIInfo::GetVarArgRegs() const {
-  if (IsLP()) {
+  if (IsLP())
     return makeArrayRef(LPIntRegs);
-  }
   llvm_unreachable("Unhandled ABI");
 }
 
-unsigned
-MYRISCVXABIInfo::GetCalleeAllocdArgSizeInBytes(CallingConv::ID CC) const {
-  if (IsLP()) {
+unsigned MYRISCVXABIInfo::GetCalleeAllocdArgSizeInBytes(CallingConv::ID CC) const {
+  if (IsLP())
     return CC != 0;
-  }
-
   llvm_unreachable("Unhandled ABI");
 }
 
+// @{ MYRISCVXABIInfo_cpp_computeTargetABI
+// computeTargetABIはMYRISCVXのABIを決定する
 MYRISCVXABIInfo MYRISCVXABIInfo::computeTargetABI(StringRef ABIName) {
   MYRISCVXABIInfo abi(ABI::Unknown);
 
   if (ABIName.empty()) {
     return ABI::LP;
   }
-
   if (ABIName == "lp") {
     return ABI::LP;
   }
-
+// @{ MYRISCVXABIInfo_cpp_computeTargetABI ...
   if (ABIName == "stack") {
     return ABI::STACK;
   }
+// @} MYRISCVXABIInfo_cpp_computeTargetABI ...
 
+  // 確実に1つのABIが選択されていることを確認する
   errs() << "Unknown ABI : " << ABIName << '\n';
 
   return abi;
 }
+// @} MYRISCVXABIInfo_cpp_computeTargetABI
 
-unsigned MYRISCVXABIInfo::GetStackPtr() const { return MYRISCVX::SP; }
+unsigned MYRISCVXABIInfo::GetStackPtr() const {
+  return MYRISCVX::SP;
+}
 
-unsigned MYRISCVXABIInfo::GetFramePtr() const { return MYRISCVX::FP; }
+unsigned MYRISCVXABIInfo::GetFramePtr() const {
+  return MYRISCVX::FP;
+}
 
-unsigned MYRISCVXABIInfo::GetNullPtr() const { return MYRISCVX::ZERO; }
+unsigned MYRISCVXABIInfo::GetNullPtr() const {
+  return MYRISCVX::ZERO;
+}
 
 unsigned MYRISCVXABIInfo::GetEhDataReg(unsigned I) const {
-  static const unsigned EhDataReg[] = {MYRISCVX::A0, MYRISCVX::A1, MYRISCVX::A2,
-                                       MYRISCVX::A3, MYRISCVX::A4, MYRISCVX::A5,
-                                       MYRISCVX::A6, MYRISCVX::A7};
+  static const unsigned EhDataReg[] = {
+    MYRISCVX::A0, MYRISCVX::A1, MYRISCVX::A2, MYRISCVX::A3,
+    MYRISCVX::A4, MYRISCVX::A5, MYRISCVX::A6, MYRISCVX::A7
+  };
+
   return EhDataReg[I];
 }
 
-int MYRISCVXABIInfo::EhDataRegSize() const { return sizeof(LPIntRegs); }
+int MYRISCVXABIInfo::EhDataRegSize() const {
+  return sizeof(LPIntRegs);
+}

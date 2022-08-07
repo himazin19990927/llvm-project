@@ -26,15 +26,9 @@
 
 using namespace llvm;
 
-
 MYRISCVXTargetStreamer::MYRISCVXTargetStreamer(MCStreamer &S)
     : MCTargetStreamer(S) {}
 
 MYRISCVXTargetAsmStreamer::MYRISCVXTargetAsmStreamer(MCStreamer &S,
                                                      formatted_raw_ostream &OS)
     : MYRISCVXTargetStreamer(S), OS(OS) {}
-
-// class MYRISCVXTargetStreamer : public MCTargetStreamer {
-//  public:
-//   MYRISCVXTargetStreamer(MCStreamer &S);
-// };

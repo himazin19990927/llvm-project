@@ -47,17 +47,11 @@ bool MYRISCVXAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   return true;
 }
 
-// @{ MYRISCVXAsmPrinter_cpp_EmitInstruction_PseudoExpansionLowering
 // @{ MYRISCVXAsmPrinter_cpp_EmitInstruction
 // @{ MYRISCVXAsmPrinter_cpp_EmitInstruction_MCInstLower
 // MachineInstr形式の命令をMCInst形式に変換し、アセンブリ命令を出力する
 void MYRISCVXAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // @{ MYRISCVXAsmPrinter_cpp_EmitInstruction_MCInstLower ...
-  // 命令出力時に, まずは疑似命令出力のチェックを行う
-  if (emitPseudoExpansionLowering(*OutStreamer, MI))
-    return;
-  // @} MYRISCVXAsmPrinter_cpp_EmitInstruction_PseudoExpansionLowering
-
   if (MI->isDebugValue()) {
     SmallString<128> Str;
     raw_svector_ostream OS(Str);
@@ -73,18 +67,6 @@ void MYRISCVXAsmPrinter::emitInstruction(const MachineInstr *MI) {
 }
 // @} MYRISCVXAsmPrinter_cpp_EmitInstruction_MCInstLower
 // @} MYRISCVXAsmPrinter_cpp_EmitInstruction
-
-
-bool MYRISCVXAsmPrinter::lowerOperand(const MachineOperand &MO, MCOperand &MCOp) {
-  MCOp = MCInstLowering.LowerOperand(MO);
-  return MCOp.isValid();
-}
-
-// @{ MYRISCVXAsmPrinter_cpp_EmitInstruction_PseudoLowering_inc
-// 疑似命令への置き換えパタンは自動的に生成されているので, 
-// 自動さ生成されたソースコードをincludeしておく
-#include "MYRISCVXGenMCPseudoLowering.inc"
-// @} MYRISCVXAsmPrinter_cpp_EmitInstruction_PseudoLowering_inc
 
 
 /// Emit Set directives.
@@ -129,59 +111,6 @@ void MYRISCVXAsmPrinter::emitStartOfAsmFile(Module &M) {
   if (OutStreamer->hasRawTextSupport())
     OutStreamer->emitRawText(StringRef("\t.previous"));
 }
-
-
-// @{ MYRISCVXAsmPrinter_PrintAsmOperand
-bool MYRISCVXAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                                      const char *ExtraCode, raw_ostream &OS) {
-  // First try the generic code, which knows about modifiers like 'c' and 'n'.
-  if (!AsmPrinter::PrintAsmOperand(MI, OpNo, ExtraCode, OS))
-    return false;
-
-  const MachineOperand &MO = MI->getOperand(OpNo);
-  switch (MO.getType()) {
-  case MachineOperand::MO_Immediate:
-    OS << MO.getImm();
-    return false;
-  case MachineOperand::MO_Register:
-    OS << MYRISCVXInstPrinter::getRegisterName(MO.getReg());
-    return false;
-  case MachineOperand::MO_GlobalAddress:
-    PrintSymbolOperand(MO, OS);
-    return false;
-  case MachineOperand::MO_BlockAddress: {
-    MCSymbol *Sym = GetBlockAddressSymbol(MO.getBlockAddress());
-    Sym->print(OS, MAI);
-    return false;
-  }
-  default:
-    break;
-  }
-
-  return true;
-}
-// @} MYRISCVXAsmPrinter_PrintAsmOperand
-
-
-// @{ MYRISCVXAsmPrinter_PrintAsmMemoryOperand
-bool MYRISCVXAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
-                                               unsigned OpNo,
-                                               const char *ExtraCode,
-                                               raw_ostream &OS) {
-  if (!ExtraCode) {
-    const MachineOperand &MO = MI->getOperand(OpNo);
-    // For now, we only support register memory operands in registers and
-    // assume there is no addend
-    if (!MO.isReg())
-      return true;
-
-    OS << "0(" << MYRISCVXInstPrinter::getRegisterName(MO.getReg()) << ")";
-    return false;
-  }
-
-  return AsmPrinter::PrintAsmMemoryOperand(MI, OpNo, ExtraCode, OS);
-}
-// @} MYRISCVXAsmPrinter_PrintAsmMemoryOperand
 
 
 void MYRISCVXAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,

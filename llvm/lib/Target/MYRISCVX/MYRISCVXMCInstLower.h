@@ -10,13 +10,9 @@
 #ifndef LLVM_LIB_TARGET_MYRISCVX_MYRISCVXMCINSTLOWER_H
 #define LLVM_LIB_TARGET_MYRISCVX_MYRISCVXMCINSTLOWER_H
 
-#include "MCTargetDesc/MYRISCVXMCExpr.h"
-
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/Support/Compiler.h"
-
-#include "MCTargetDesc/MYRISCVXMCExpr.h"
 
 namespace llvm {
 class MCContext;
@@ -36,10 +32,6 @@ public:
   void Initialize(MCContext* C);
   void Lower(const MachineInstr *MI, MCInst &OutMI) const;
   MCOperand LowerOperand(const MachineOperand& MO, unsigned offset = 0) const;
-
-private:
-  MCOperand LowerSymbolOperand(const MachineOperand &MO,
-                               MachineOperandType MOTy, unsigned Offset) const;
 };
 }
 

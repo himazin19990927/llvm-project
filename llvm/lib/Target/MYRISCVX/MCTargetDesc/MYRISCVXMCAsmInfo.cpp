@@ -1,11 +1,25 @@
+//===-- MYRISCVXMCAsmInfo.cpp - MYRISCVX Asm Properties -------------------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file contains the declarations of the MYRISCVXMCAsmInfo properties.
+//
+//===----------------------------------------------------------------------===//
+
 #include "MYRISCVXMCAsmInfo.h"
 
 #include "llvm/ADT/Triple.h"
 
 using namespace llvm;
 
-void MYRISCVXMCAsmInfo::anchor() {}
+void MYRISCVXMCAsmInfo::anchor() { }
 
+// @{ MYRISCVXMCAsmInfo_cpp_MYRISCVXMCAsmInfo
 MYRISCVXMCAsmInfo::MYRISCVXMCAsmInfo(const Triple &TheTriple) {
   AlignmentIsInBytes          = true;           // 出力アセンブリファイルにアライメントに関する情報を出すか
   Data16bitsDirective         = "\t.2byte\t";   // 16ビットアライン時のディレクティブ
@@ -24,3 +38,4 @@ MYRISCVXMCAsmInfo::MYRISCVXMCAsmInfo(const Triple &TheTriple) {
   SupportsDebugInformation = true;
   DwarfRegNumForCFI = true;
 }
+// @} MYRISCVXMCAsmInfo_cpp_MYRISCVXMCAsmInfo

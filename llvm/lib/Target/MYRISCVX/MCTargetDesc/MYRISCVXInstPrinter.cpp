@@ -1,5 +1,4 @@
-//===-- MYRISCVXInstPrinter.cpp - Convert MYRISCVX MCInst to assembly syntax
-//------===//
+//===-- MYRISCVXInstPrinter.cpp - Convert MYRISCVX MCInst to assembly syntax ------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -13,7 +12,6 @@
 //===------------------------------------------------------------------------------===//
 
 #include "MYRISCVXInstPrinter.h"
-// #include "MCTargetDesc/MYRISCVXMCExpr.h"
 
 #include "MYRISCVXInstrInfo.h"
 #include "llvm/ADT/StringExtras.h"
@@ -31,8 +29,7 @@ using namespace llvm;
 #include "MYRISCVXGenAsmWriter.inc"
 
 void MYRISCVXInstPrinter::printRegName(raw_ostream &OS, unsigned RegNo) const {
-  //- getRegisterName(RegNo) defined in MYRISCVXGenAsmWriter.inc which indicate
-  //in
+  //- getRegisterName(RegNo) defined in MYRISCVXGenAsmWriter.inc which indicate in
   //   MYRISCVX.td.
   OS << StringRef(getRegisterName(RegNo)).lower();
 }
@@ -43,13 +40,13 @@ void MYRISCVXInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                     raw_ostream &O) {
   // Try to print any aliases first.
   if (!printAliasInstr(MI, Address, O))
-    //- printInstruction(MI, O) defined in MYRISCVXGenAsmWriter.inc which came
-    //from
+    //- printInstruction(MI, O) defined in MYRISCVXGenAsmWriter.inc which came from
     //   MYRISCVX.td indicate.
     printInstruction(MI, Address, O);
   printAnnotation(O, Annot);
 }
 // @} MYRISCVXInstPrinter_cpp_printInst
+
 
 // @{ MYRISCVXInstPrinter_cpp_printOperand
 void MYRISCVXInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
@@ -73,6 +70,7 @@ void MYRISCVXInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
 }
 // @} MYRISCVXInstPrinter_cpp_printOperand
 
+
 void MYRISCVXInstPrinter::printUnsignedImm(const MCInst *MI, int opNum,
                                            raw_ostream &O) {
   const MCOperand &MO = MI->getOperand(opNum);
@@ -83,10 +81,9 @@ void MYRISCVXInstPrinter::printUnsignedImm(const MCInst *MI, int opNum,
 }
 
 // @{ MYRISCVXInstPrinter_cpp_printMemOperand
-void MYRISCVXInstPrinter::printMemOperand(const MCInst *MI, int opNum,
-                                          raw_ostream &O) {
+void MYRISCVXInstPrinter::printMemOperand(const MCInst *MI, int opNum, raw_ostream &O) {
   // メモリオペランドに対する出力関数. imm(reg)の形式で出力する
-  printOperand(MI, opNum + 1, O);
+  printOperand(MI, opNum+1, O);
   O << "(";
   printOperand(MI, opNum, O);
   O << ")";

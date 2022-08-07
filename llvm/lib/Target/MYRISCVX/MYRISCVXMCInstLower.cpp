@@ -33,99 +33,6 @@ void MYRISCVXMCInstLower::Initialize(MCContext* C) {
   Ctx = C;
 }
 
-
-// @{ MYRISCVXMCInstLower_LowerSymbolOperand_Switch
-MCOperand MYRISCVXMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
-                                                  MachineOperandType MOTy,
-                                                  unsigned Offset) const {
-  MCSymbolRefExpr::VariantKind Kind = MCSymbolRefExpr::VK_None;
-  MYRISCVXMCExpr::MYRISCVXExprKind TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_None;
-  const MCSymbol *Symbol;
-
-  // switch(MO.getTargetFlags()) {
-  //   default:                   llvm_unreachable("Invalid target flag!");
-  //   case MYRISCVXII::MO_NONE:
-  //     break;
-  //   case MYRISCVXII::MO_HI20:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_HI20;
-  //     break;
-  //   case MYRISCVXII::MO_LO12_I:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_LO12_I;
-  //     break;
-  //   case MYRISCVXII::MO_LO12_S:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_LO12_S;
-  //     break;
-
-  //   case MYRISCVXII::MO_CALL:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_CALL;
-  //     break;
-  //   case MYRISCVXII::MO_CALL_PLT:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_CALL_PLT;
-  //     break;
-
-  //   case MYRISCVXII::MO_GOT_HI20:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_GOT_HI20;
-  //     break;
-
-  //   case MYRISCVXII::MO_PCREL_HI20:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_PCREL_HI20;
-  //     break;
-  //   case MYRISCVXII::MO_PCREL_LO12_I:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_PCREL_LO12_I;
-  //     break;
-  //   case MYRISCVXII::MO_PCREL_LO12_S:
-  //     TargetKind = MYRISCVXMCExpr::VK_MYRISCVX_PCREL_LO12_S;
-  //     break;
-  // }
-  // @} MYRISCVXMCInstLower_LowerSymbolOperand_Switch
-
-  switch (MOTy) {
-    case MachineOperand::MO_GlobalAddress:
-      Symbol = AsmPrinter.getSymbol(MO.getGlobal());
-      Offset += MO.getOffset();
-      break;
-    case MachineOperand::MO_ExternalSymbol:
-      Symbol = AsmPrinter.GetExternalSymbolSymbol(MO.getSymbolName());
-      Offset += MO.getOffset();
-      break;
-    case MachineOperand::MO_MachineBasicBlock:
-      Symbol = MO.getMBB()->getSymbol();
-      break;
-
-    case MachineOperand::MO_BlockAddress:
-      Symbol = AsmPrinter.GetBlockAddressSymbol(MO.getBlockAddress());
-      Offset += MO.getOffset();
-      break;
-
-    case MachineOperand::MO_JumpTableIndex:
-      Symbol = AsmPrinter.GetJTISymbol(MO.getIndex());
-      break;
-    case MachineOperand::MO_ConstantPoolIndex:
-      Symbol = AsmPrinter.GetCPISymbol(MO.getIndex());
-      Offset += MO.getOffset();
-      break;
-
-    default:
-      llvm_unreachable("<unknown operand type>");
-  }
-
-  const MCExpr *Expr = MCSymbolRefExpr::create(Symbol, Kind, *Ctx);
-
-  if (Offset) {
-    // Assume offset is never negative.
-    assert(Offset > 0);
-    Expr = MCBinaryExpr::createAdd(Expr, MCConstantExpr::create(Offset, *Ctx),
-                                   *Ctx);
-  }
-
-  if (TargetKind != MYRISCVXMCExpr::VK_MYRISCVX_None)
-    Expr = MYRISCVXMCExpr::create(TargetKind, Expr, *Ctx);
-
-  return MCOperand::createExpr(Expr);
-}
-
-
-// @{ MYRISCVXMCInstLower_LowerOperand
 MCOperand MYRISCVXMCInstLower::LowerOperand(const MachineOperand& MO,
                                             unsigned offset) const {
   MachineOperandType MOTy = MO.getType();
@@ -138,21 +45,12 @@ MCOperand MYRISCVXMCInstLower::LowerOperand(const MachineOperand& MO,
       return MCOperand::createReg(MO.getReg());
     case MachineOperand::MO_Immediate:
       return MCOperand::createImm(MO.getImm() + offset);
-    case MachineOperand::MO_MachineBasicBlock:
-    case MachineOperand::MO_JumpTableIndex:
-    case MachineOperand::MO_BlockAddress:
-    case MachineOperand::MO_ExternalSymbol:
-    case MachineOperand::MO_GlobalAddress:
-    case MachineOperand::MO_ConstantPoolIndex:
-      return LowerSymbolOperand(MO, MOTy, offset);
     case MachineOperand::MO_RegisterMask:
       break;
   }
 
   return MCOperand();
 }
-// @} MYRISCVXMCInstLower_LowerOperand
-
 
 // @{ MYRISCVXMCInstLower_Lower
 // MachineInstrからMCInstへの変換を行う関数

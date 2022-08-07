@@ -1,26 +1,62 @@
+//===-- MYRISCVX.td - Describe the MYRISCVX Target Machine -*- tablegen -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+// This is the top level entry point for the MYRISCVX target.
+//===----------------------------------------------------------------------===//
+
+// @{ Add_MYRISCVX_td_target
+
 include "llvm/Target/Target.td"
 
+//===----------------------------------------------------------------------===//
+// MYRISCVX subtarget features and instruction predicates.
+//===----------------------------------------------------------------------===//
+
+// @{ MYRISCVX_td_SubTarget
 // MYRISCVXの属性としてFeatureRV64を定義する
 def FeatureRV64 : SubtargetFeature<"64bit", "HasRV64", "true", "RV64 support">;
 
 // CPUモデルcpu-rv32/cpu-rv64
-// cpu-rv64のときはFeatureRV64が有効になる
+// cpu-rv64の時はFeatureRV64が有効になる
 def : ProcessorModel<"cpu-rv32", NoSchedModel, []>;
 def : ProcessorModel<"cpu-rv64", NoSchedModel, [FeatureRV64]>;
+// @} MYRISCVX_td_SubTarget
 
+//===----------------------------------------------------------------------===//
+// Target-dependent interfaces
+//===----------------------------------------------------------------------===//
 
-def RV64 : HwMode<"+64bit">; // MYRISCVX64用のスイッチを定義
-def RV32 : HwMode<"-64bit">; // MYRISCVX32用のスイッチを定義
+// @{ MYRISCVX_td_RV64_RV32
+def RV64 : HwMode<"+64bit">;    // MYRISCVX64用のスイッチを定義
+def RV32 : HwMode<"-64bit">;    // MYRISCVX32用のスイッチを定義
+// @} MYRISCVX_td_RV64_RV32
 
-include "MYRISCVXRegisterInfo.td" // レジスタ定義を含んだtdファイル
+// @{ MYRISCVX_td_IsRV64
+def IsRV64 : Predicate<"Subtarget->is64Bit()">,
+                       AssemblerPredicate<(all_of FeatureRV64),
+                       "RV64I Base Instruction Set">;
+def IsRV32 : Predicate<"!Subtarget->is64Bit()">,
+                       AssemblerPredicate<(all_of (not FeatureRV64)),
+                       "RV32I Base Instruction Set">;
+// @} MYRISCVX_td_IsRV64
+
+include "MYRISCVXRegisterInfo.td"   // レジスタ定義を含んだtdファイル
 include "MYRISCVXSchedule.td"
-include "MYRISCVXInstrInfo.td" // 命令定義を含んだtdファイル
+include "MYRISCVXInstrInfo.td"      // 命令定義を含んだtdファイル
 include "MYRISCVXCallingConv.td"
 
 def MYRISCVXInstrInfo : InstrInfo;
 
-
+// @{ MYRISCVX_td_MYRISCVX
 // MYRISCVXターゲットアーキテクチャを作成する
 def MYRISCVX : Target {
-    let InstructionSet = MYRISCVXInstrInfo;
+  // MYRISCVXInstrInfoは上記で定義したもの. InstrInfoを継承している
+  let InstructionSet = MYRISCVXInstrInfo;
 }
+// @} MYRISCVX_td_MYRISCVX
+// @} Add_MYRISCVX_td_target

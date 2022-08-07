@@ -61,14 +61,6 @@ public:
 
   virtual bool runOnMachineFunction(MachineFunction &MF) override;
 
-    bool emitPseudoExpansionLowering(MCStreamer &OutStreamer,
-                                     const MachineInstr *MI);
-
-  bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                       const char *ExtraCode, raw_ostream &OS) override;
-  bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
-                             const char *ExtraCode, raw_ostream &OS) override;
-
   //- EmitInstruction() must exists or will have run time error.
   void emitInstruction(const MachineInstr *MI) override;
   void printSavedRegsBitmask(raw_ostream &O) {}
