@@ -7,14 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file contains the MYRISCVX implementation of the TargetRegisterInfo class.
+// This file contains the MYRISCVX implementation of the TargetRegisterInfo
+// class.
 //
 //===----------------------------------------------------------------------===//
 
-#include "MYRISCVX.h"
 #include "MYRISCVXRegisterInfo.h"
-#include "MYRISCVXSubtarget.h"
+#include "MYRISCVX.h"
 #include "MYRISCVXMachineFunction.h"
+#include "MYRISCVXSubtarget.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/CommandLine.h"
@@ -29,16 +30,16 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "MYRISCVXGenRegisterInfo.inc"
 
-
-MYRISCVXRegisterInfo::MYRISCVXRegisterInfo(const MYRISCVXSubtarget &ST, unsigned HwMode)
-    : MYRISCVXGenRegisterInfo(MYRISCVX::RA, /*DwarfFlavour*/0, /*EHFlavor*/0,
-                              /*PC*/0, HwMode), Subtarget(ST) {}
+MYRISCVXRegisterInfo::MYRISCVXRegisterInfo(const MYRISCVXSubtarget &ST,
+                                           unsigned HwMode)
+    : MYRISCVXGenRegisterInfo(MYRISCVX::RA, /*DwarfFlavour*/ 0, /*EHFlavor*/ 0,
+                              /*PC*/ 0, HwMode),
+      Subtarget(ST) {}
 
 const TargetRegisterClass *
 MYRISCVXRegisterInfo::intRegClass(unsigned Size) const {
   return &MYRISCVX::GPRRegClass;
 }
-
 
 //===----------------------------------------------------------------------===//
 // Callee Saved Registers methods
@@ -61,13 +62,13 @@ MYRISCVXRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
 // @} MYRISCVXRegisterInfo_getCallPreservedMask
 
 // @{ MYRISCVXRegisterInfo_getReservedRegs
-BitVector MYRISCVXRegisterInfo::
-getReservedRegs(const MachineFunction &MF) const {
+BitVector
+MYRISCVXRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   // zero, ra, fp, sp, gp, tpはシステムが使用する予約済みレジスタなので
   // レジスタ割り当てに使用しない
-  static const uint16_t ReservedCPURegs[] = {
-    MYRISCVX::ZERO, MYRISCVX::RA, MYRISCVX::FP, MYRISCVX::SP, MYRISCVX::GP, MYRISCVX::TP
-  };
+  static const uint16_t ReservedCPURegs[] = {MYRISCVX::ZERO, MYRISCVX::RA,
+                                             MYRISCVX::FP,   MYRISCVX::SP,
+                                             MYRISCVX::GP,   MYRISCVX::TP};
   BitVector Reserved(getNumRegs());
 
   for (unsigned I = 0; I < array_lengthof(ReservedCPURegs); ++I)
@@ -78,35 +79,73 @@ getReservedRegs(const MachineFunction &MF) const {
 // @} MYRISCVXRegisterInfo_getReservedRegs
 
 // @{ MYRISCVXRegisterInfo_eliminateFrameIndex
-void MYRISCVXRegisterInfo::
-eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
-                    unsigned FIOperandNum, RegScavenger *RS) const {
-  // フレームインデックスを削除するための関数
-  // ここではまだ実装しない
+// eliminateFrameIndexでは関数内の変数参照に使用される仮想的なオフセットを
+// 具体的なオフセット計算に置き換える
+void MYRISCVXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+                                               int SPAdj, unsigned FIOperandNum,
+                                               RegScavenger *RS) const {
+
+  MachineInstr &MI = *II;
+  MachineFunction &MF = *MI.getParent()->getParent();
+  MachineFrameInfo MFI = MF.getFrameInfo();
+
+  // フレームインデックスを使用しているオペランドを探す
+  unsigned i = 0;
+  while (!MI.getOperand(i).isFI()) {
+    ++i;
+    assert(i < MI.getNumOperands() && "Instr doesn't have FrameIndex operand!");
+  }
+
+  LLVM_DEBUG(errs() << "\nFunction :" << MF.getFunction().getName() << '\n';
+             errs() << "<------->\n"
+                    << MI);
+  int FrameIndex = MI.getOperand(i).getIndex();
+  // スタックフレームのサイズと、フレームインデックスからのオフセットを取得
+  uint64_t stackSize = MF.getFrameInfo().getStackSize();
+  int64_t spOffset = MF.getFrameInfo().getObjectOffset(FrameIndex);
+
+  LLVM_DEBUG(errs() << "FrameIndex : " << FrameIndex << '\n'
+                    << "spOffset   : " << spOffset << '\n'
+                    << "stackSize  : " << stackSize << '\n');
+
+  // スタックフレーム内の変数はSPレジスタを基準にして参照する
+  unsigned FrameReg = MYRISCVX::SP;
+
+  // スタックポインタからのオフセットを計算する
+  int64_t Offset;
+  Offset = spOffset + (int64_t)stackSize;
+  Offset += MI.getOperand(i + 1).getImm();
+
+  LLVM_DEBUG(errs() << "Offset :" << Offset << '\n' << "<----->\n");
+
+  if (!MI.isDebugValue() && !isInt<12>(Offset)) {
+    assert("(!MI.isDebugValue() && !isInt<16>(Offset))");
+  }
+
+  // スタックフレームの参照をスタックフレームと新たに計算したオフセットに置き換える
+  MI.getOperand(i + 0).ChangeToRegister(FrameReg, false);
+  MI.getOperand(i + 1).ChangeToImmediate(Offset);
 }
 // @} MYRISCVXRegisterInfo_eliminateFrameIndex
 
 // @{ MYRISCVXRegisterInfo_requiresRegisterScavenging
-bool
-MYRISCVXRegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
+bool MYRISCVXRegisterInfo::requiresRegisterScavenging(
+    const MachineFunction &MF) const {
   return true;
 }
 // @} MYRISCVXRegisterInfo_requiresRegisterScavenging
 
-
 // @{ MYRISCVXRegisterInfo_trackLivenessAfterRegAlloc
-bool
-MYRISCVXRegisterInfo::trackLivenessAfterRegAlloc(const MachineFunction &MF) const {
+bool MYRISCVXRegisterInfo::trackLivenessAfterRegAlloc(
+    const MachineFunction &MF) const {
   return true;
 }
 // @} MYRISCVXRegisterInfo_trackLivenessAfterRegAlloc
 
-
 // @{ MYRISCVXRegisterInfo_getFrameRegister
-Register MYRISCVXRegisterInfo::
-getFrameRegister(const MachineFunction &MF) const {
+Register
+MYRISCVXRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
-  return TFI->hasFP(MF) ? (MYRISCVX::FP) :
-      (MYRISCVX::SP);
+  return TFI->hasFP(MF) ? (MYRISCVX::FP) : (MYRISCVX::SP);
 }
 // @} MYRISCVXRegisterInfo_getFrameRegister

@@ -39,8 +39,17 @@ class MYRISCVXInstrInfo : public MYRISCVXGenInstrInfo {
 
   void expandRetRA(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;
   bool expandPostRAPseudo(MachineInstr &MI) const override;
- protected:
+
+  /// Adjust SP by Amount bytes
+  void adjustStackPtr(unsigned SP, int64_t Amount, MachineBasicBlock &MBB,
+                      MachineBasicBlock::iterator I) const;
+
+  void loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
+                     MachineBasicBlock::iterator II, const DebugLoc &DL,
+                     unsigned DstReg, unsigned *NewImm) const;
+
+protected:
 };
-}
+} // namespace llvm
 
 #endif

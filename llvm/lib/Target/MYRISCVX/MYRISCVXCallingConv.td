@@ -23,6 +23,63 @@ class CCIfSubtarget<string F, CCAction A, string Invert = "">
 def CSR_LP32 : CalleeSavedRegs<(add RA, SP, FP, S1, (sequence "S%u", 2, 11))>;
 // @} MYRISCVXCallingConv_CSR_LP32
 
+//===----------------------------------------------------------------------===//
+// MYRISCVX LP32/STACK32 Calling Convention
+//===----------------------------------------------------------------------===//
+def CC_LP32 : CallingConv<[
+  // i1/i8/i16の型はi32に変換する
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+
+  // i32型の引数はA0 - A7のレジスタに割り当てる
+  CCIfType<[i32], CCAssignToReg<[A0, A1, A2, A3, A4, A5, A6, A7]>>,
+
+  // 引数をスタックに割り当てる場合は4バイトサイズ、4バイトアラインで配置する
+  CCIfType<[i32], CCAssignToStack<4, 4>>
+]>;
+
+def CC_STACK32 : CallingConv<[
+  // Promote i8/i16 arguments to i32
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+
+  // Integer values get stored in stack slots that are 4 bytes in
+  // size and 4-byte aligned.
+  CCIfType<[i32], CCAssignToStack<4, 4>>
+]>;
+
+
+//===----------------------------------------------------------------------===//
+// MYRISCVX LP64/STACK64 Calling Convention
+//===----------------------------------------------------------------------===//
+def CC_LP64 : CallingConv<[
+  // i1/k8/i16の型はi32に変換する
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+
+  // i32/i64型の引数はA0 - A7のレジスタに割り当てる
+  CCIfType<[i32, i64], CCAssignToReg<[A0, A1, A2, A3, A4, A5, A6, A7]>>,
+
+  // 引数をスタックに割り当てる場合は型に応じて確保するサイズとバイトアラインを指定する
+  CCIfType<[i32], CCAssignToStack<4, 4>>,
+  CCIfType<[i64], CCAssignToStack<8, 9>>
+]>;
+
+def CC_STACK64 : CallingConv<[
+  // Promote i1/i8/i16 arguments to i21
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+
+  // Integer values get stored in stack slots that are 8 bytes in
+  // size and 8-byte aligned.
+  CCIfType<[i32], CCAssignToStack<4, 4>>,
+  CCIfType<[i64], CCAssignToStack<8, 8>>
+]>;
+
+// MYRISCVXの引数渡しのConvention
+def  CC_MYRISCVX : CallingConv<[
+  // RV64の場合はCC_LP64を使用する
+  CCIfSubtarget<"isABI_LP64   ()", CCDelegateTo<CC_LP64>>,
+  // RV32の場合はCC_LP32を使用する
+  CCDelegateTo<CC_LP32>
+]>;
+
 
 //===----------------------------------------------------------------------===//
 // MYRISCVX LP32 Return Convention
