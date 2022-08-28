@@ -14,6 +14,7 @@
 
 #include "MYRISCVXISelDAGToDAG.h"
 #include "MYRISCVX.h"
+#include "MYRISCVXMatInt.h"
 
 #include "MYRISCVXMachineFunction.h"
 #include "MYRISCVXRegisterInfo.h"
@@ -62,10 +63,44 @@ bool MYRISCVXDAGToDAGISel::SelectAddrFI(SDValue Addr, SDValue &Base) {
   return false;
 }
 
+static SDNode *selectImm(SelectionDAG *CurDAG, const SDLoc &DL, int64_t Imm,
+                         MVT XLenVT) {
+
+  // generateInstSeqでは定数生成のための命令列を返す
+  // 各命令は(opcode, imm)のフィールドを持つ構造体で表される
+  // opcodeはMYRISCVX::LUI, MYRISCVX::ADDIW, MYRISCVX::ADDIのいずれかである
+  // いずれの命令もレジスタと即値の入力を受け取り、結果をレジスタに格納する
+  MYRISCVXMatInt::InstSeq Seq;
+  MYRISCVXMatInt::generateInstSeq(Imm, XLenVT == MVT::i64, Seq);
+
+  // 命令によって生成された値
+  SDNode *Result = nullptr;
+
+  // 命令の入力として使用する値(初期値はゼロレジスタ)
+  SDValue SrcReg = CurDAG->getRegister(MYRISCVX::ZERO, XLenVT);
+
+  for (MYRISCVXMatInt::Inst &Inst : Seq) {
+    SDValue SDImm = CurDAG->getTargetConstant(Inst.Imm, DL, XLenVT);
+
+    if (Inst.Opc == MYRISCVX::LUI) {
+      Result = CurDAG->getMachineNode(MYRISCVX::LUI, DL, XLenVT, SDImm);
+    } else {
+      Result = CurDAG->getMachineNode(Inst.Opc, DL, XLenVT, SrcReg, SDImm);
+    }
+
+    SrcReg = SDValue(Result, 0);
+  }
+
+  return Result;
+}
+
 /// Select instructions not customized! Used for
 /// expanded, promoted and normal instructions
 void MYRISCVXDAGToDAGISel::Select(SDNode *Node) {
   unsigned Opcode = Node->getOpcode();
+  MVT XLenVT = Subtarget->getXLenVT();
+  SDLoc DL(Node);
+  EVT VT = Node->getValueType(0);
 
   LLVM_DEBUG(errs() << "Selecting: "; Node->dump(CurDAG); errs() << "\n");
 
@@ -80,6 +115,15 @@ void MYRISCVXDAGToDAGISel::Select(SDNode *Node) {
   switch (Opcode) {
   default:
     break;
+  case ISD::Constant: {
+    auto ConstNode = cast<ConstantSDNode>(Node);
+    int64_t Imm = ConstNode->getSExtValue();
+    if (XLenVT == MVT::i64) {
+      ReplaceNode(Node, selectImm(CurDAG, SDLoc(Node), Imm, XLenVT));
+      return;
+    }
+    break;
+  }
   }
 
   // デフォルトでは以下の関数が呼び出されて変換が行われる
