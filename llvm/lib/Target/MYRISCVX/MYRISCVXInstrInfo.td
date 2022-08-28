@@ -246,6 +246,79 @@ def SRLI : ShiftI<0b0010011, 0b101, 0, "srli", srl>;
 def SLLI : ShiftI<0b0010011, 0b001, 0, "slli", shl>;
 def SRAI : ShiftI<0b0010011, 0b101, 1, "srai", sra>;
 
+let Predicates = [IsRV64] in {
+  class ArithLogicI_W<bits<7> opcode, bits<3> funct3,
+                    string instr_asm, Operand Od, RegisterClass RC>:
+    MYRISCVX_I<opcode, funct3, (outs RC:$rd), (ins RC:$rs1, Od:$simm12),
+    !strconcat(instr_asm, "\t$rd, $rs1, $simm12"),
+    [], IIAlu> {
+    let isReMaterializable = 1;
+  }
+
+  class ArithLogicR_W<bits<7> opcode, bits<3> funct3, bits<7> funct7,
+                      string instr_asm, RegisterClass RC>:
+    MYRISCVX_R<opcode, funct3, funct7, (outs RC:$rd), (ins RC:$rs1, RC:$rs2),
+    !strconcat(instr_asm, "\t$rd, $rs1, $rs2"),
+    [], IIAlu> {
+      let isReMaterializable = 1;
+  }
+
+  class ShiftI32_W<bits<7> opcode, bits<3> funct3, bit arithshift, string instr_asm>:
+    MYRISCVX_ISHIFT<opcode, funct3, arithshift, (outs GPR:$rd), (ins GPR:$rs1, immZExt_Xlen:$shamt),
+    !strconcat(instr_asm, "\t$rd, $rs1, $shamt"),
+    [], IIAlu> {}
+  
+  class ShiftR_W<bits<7> opcode, bits<7> funct7, bits<3> funct3,
+                  bits<4> isRotate, string instr_asm, RegisterClass RC>:
+    MYRISCVX_R<opcode, funct3, funct7, (outs RC:$rd), (ins RC:$rs1, RC:$rs2),
+    !strconcat(instr_asm, "\t$rd, $rs1, $rs2"),
+    [], IIAlu> {}
+
+  def SLLIW : ShiftI32_W<0b0011011, 0b001, 0, "slliw">;
+  def SRLIW : ShiftI32_W<0b0011011, 0b101, 0, "srliw">;
+  def SRAIW : ShiftI32_W<0b0011011, 0b101, 1, "sraiw">;
+
+  def ADDIW : ArithLogicI_W<0b0011011, 0b000, "addiw", simm12, GPR>;
+
+  def ADDW : ArithLogicR_W<0b0111011, 0b000, 0b0000000, "addw", GPR>;
+  def SUBW : ArithLogicR_W<0b0111011, 0b000, 0b0000000, "addw", GPR>;
+
+  def SLLW : ShiftR_W<0b0111011, 0b0000000, 0b001, 0x0, "sllw", GPR>;
+  def SRLW : ShiftR_W<0b0111011, 0b0000000, 0b101, 0x0, "sllw", GPR>;
+  def SRAW : ShiftR_W<0b0111011, 0b0100000, 0b101, 0x0, "sllw", GPR>;
+
+  def MULW  : ArithLogicR_W<0b0111011, 0b000, 0b0000001, "mulw", GPR>;
+  def DIVW   : ArithLogicR_W<0b0111011, 0b100, 0b0000001, "divw", GPR>;
+  def DIVUW : ArithLogicR_W<0b0111011, 0b101, 0b0000001, "divuw", GPR>;
+  def REMW  : ArithLogicR_W<0b0111011, 0b110, 0b0000001, "remw", GPR>;
+  def REMUW : ArithLogicR_W<0b0111011, 0b111, 0b0000001, "remuw", GPR>;
+
+  // 64bitのときの32bit演算命令の生成パターン
+  def : Pat<(sext_inreg GPR:$rs1, i32),
+            (ADDIW GPR:$rs1, 0)>;
+  def : Pat<(and GPR:$rs1, 0xffffffff),
+            (SRLI (SLLI GPR:$rs1, 32), 32)>;
+
+  def : Pat<(sext_inreg (add GPR:$rs1, GPR:$rs2), i32), 
+            (ADDW GPR:$rs1, GPR:$rs2)>;
+  def : Pat<(sext_inreg (add GPR:$rs1, simm12:$imm12), i32),
+            (ADDIW GPR:$rs1, simm12:$imm12)>;
+  def : Pat<(sext_inreg (sub GPR:$rs1, GPR:$rs2), i32),
+            (SUBW GPR:$rs1, GPR:$rs2)>;
+  def : Pat<(sext_inreg (srl GPR:$rs1, GPR:$rs2), i32),
+            (SRLW GPR:$rs1, GPR:$rs2)>;
+  def : Pat<(sext_inreg (shl GPR:$rs1, GPR:$rs2), i32),
+            (SLLW GPR:$rs1, GPR:$rs2)>;
+  def : Pat<(sext_inreg (sra GPR:$rs1, GPR:$rs2), i32),
+            (SRAW GPR:$rs1, GPR:$rs2)>;
+  def : Pat<(sext_inreg (shl GPR:$rs1, immZExt_Xlen:$shamt), i32),
+            (SLLIW GPR:$rs1, immZExt_Xlen:$shamt)>;
+  def : Pat<(sext_inreg (sra GPR:$rs1, immZExt_Xlen:$shamt), i32),
+            (SRAIW GPR:$rs1, immZExt_Xlen:$shamt)>;
+  def : Pat<(sext_inreg (srl GPR:$rs1, immZExt_Xlen:$shamt), i32),
+            (SRLIW GPR:$rs1, immZExt_Xlen:$shamt)>;
+}
+
 //@{ MYRISCVXInstrInfo_RetRA
 // RetRAノードの定義 RetRAは具体的な命令を持たない疑似ノード
 // MYRISCVXRetはRetRAに変換される
