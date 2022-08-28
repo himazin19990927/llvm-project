@@ -1,4 +1,5 @@
-//===-- MYRISCVXISelDAGToDAG.cpp - A Dag to Dag Inst Selector for MYRISCVX --------===//
+//===-- MYRISCVXISelDAGToDAG.cpp - A Dag to Dag Inst Selector for MYRISCVX
+//--------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -53,20 +54,16 @@ bool MYRISCVXDAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   return Ret;
 }
 
-
 bool MYRISCVXDAGToDAGISel::SelectAddrFI(SDValue Addr, SDValue &Base) {
   if (auto FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
-    Base = CurDAG->getTargetFrameIndex(FIN->getIndex(),
-                                       Subtarget->getXLenVT());
+    Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), Subtarget->getXLenVT());
     return true;
   }
   return false;
 }
 
-
 /// Select instructions not customized! Used for
 /// expanded, promoted and normal instructions
-// @{ MYRISCVXISelDAGToDAG_cpp_Select
 void MYRISCVXDAGToDAGISel::Select(SDNode *Node) {
   unsigned Opcode = Node->getOpcode();
 
@@ -80,19 +77,16 @@ void MYRISCVXDAGToDAGISel::Select(SDNode *Node) {
   }
 
   // 特殊な変換が必要であればここで処理する
-  switch(Opcode) {
-    default: break;
+  switch (Opcode) {
+  default:
+    break;
   }
 
   // デフォルトでは以下の関数が呼び出されて変換が行われる
   SelectCode(Node);
 }
-// @} MYRISCVXISelDAGToDAG_cpp_Select
 
-
-void MYRISCVXDAGToDAGISel::processFunctionAfterISel(MachineFunction &MF) {
-}
-
+void MYRISCVXDAGToDAGISel::processFunctionAfterISel(MachineFunction &MF) {}
 
 FunctionPass *llvm::createMYRISCVXISelDag(MYRISCVXTargetMachine &TM,
                                           CodeGenOpt::Level OptLevel) {
