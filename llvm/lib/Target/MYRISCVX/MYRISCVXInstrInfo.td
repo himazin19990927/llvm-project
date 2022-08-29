@@ -175,6 +175,26 @@ class ShiftR<bits<7> opcode, bits<7> funct7, bits<3> funct3,
              !strconcat(instr_asm, "\t$rd, $rs1, $rs2"),
              [(set GPR:$rd, (OpNode RC:$rs1, RC:$rs2))], IIAlu> {}
 
+// SetCC_Rはレジスタ版比較命令のテンプレート
+class SetCC_R<bits<7> opcode, bits<3> funct3, bits<7> funct7,
+              string instr_asm, PatFrag cond_op,
+              RegisterClass RC> :
+  MYRISCVX_R<opcode, funct3, funct7, (outs RC:$rd), (ins RC:$rs1, RC:$rs2),
+              !strconcat(instr_asm, "\t$rd, $rs1, $rs2"),
+              [(set GPR:$rd, (cond_op RC:$rs1, RC:$rs2))], IIAlu> {
+  let isReMaterializable = 1;
+}
+
+// SetCC_Iは即地版比較命令のテンプレート
+class SetCC_I<bits<7> opcode, bits<3> funct3,
+              string instr_asm, PatFrag cond_op,
+              Operand Od, RegisterClass RC> :
+  MYRISCVX_I<opcode, funct3, (outs RC:$rd), (ins RC:$rs1, Od:$simm12),
+              !strconcat(instr_asm, "\t$rd, $rs1, $simm12"),
+              [(set GPR:$rd, (cond_op RC:$rs1, Od:$simm12))], IIAlu> {
+  let isReMaterializable = 1;
+}
+
 //===----------------------------------------------------------------------===//
 // Instruction definition
 //===----------------------------------------------------------------------===//
@@ -203,6 +223,11 @@ def DIV    : ArithLogicR<0b0110011, 0b100, 0b0000001, "div",    sdiv, GPR>;
 def DIVU   : ArithLogicR<0b0110011, 0b101, 0b0000001, "divu",   udiv, GPR>;
 def REM    : ArithLogicR<0b0110011, 0b110, 0b0000001, "rem",    srem, GPR>;
 def REMU   : ArithLogicR<0b0110011, 0b111, 0b0000001, "remu",   urem, GPR>;
+
+def SLT   : SetCC_R<0b0110011, 0b010, 0b0000000, "slt",  setlt, GPR>;
+def SLTU  : SetCC_R<0b0110011, 0b011, 0b0000000, "sltu", setult, GPR>;
+def SLTI  : SetCC_I<0b0010011, 0b010, "slti",  setlt,  simm12, GPR>;
+def SLTIU : SetCC_I<0b0010011, 0b011, "sltiu", setult, simm12, GPR>;
 
 def SLL : ShiftR<0b0110011, 0b0000000, 0b001, 0x0, "sll", shl, GPR>;
 def SRL : ShiftR<0b0110011, 0b0000000, 0b101, 0x0, "srl", srl, GPR>;
@@ -355,3 +380,30 @@ let Predicates = [IsRV64] in {
   defm : StorePattern<truncstorei32, SW, GPR>;
   defm : StorePattern<store        , SD, GPR>;
 }
+
+// Define pattern expansions for setcc operations that aren't directly
+// handled by a RISC-V instruction.
+
+// `$rs1 == $rs2` -> `($rs1 ^ $rs2) <u 1`
+def : Pat<(seteq GPR:$rs1, GPR:$rs2), (SLTIU (XOR GPR:$rs1, GPR:$rs2), 1)>;
+
+// `$rs1 != $rs2` -> `0 <u ($rs1 ^ rs2)`
+def : Pat<(setne GPR:$rs1, GPR:$rs2), (SLTU ZERO, (XOR GPR:$rs1, GPR:$rs2))>; 
+
+// `$rs1 >u $rs2` -> `$rs2 <u $rs1`
+def : Pat<(setugt GPR:$rs1, GPR:$rs2), (SLTU GPR:$rs2, GPR:$rs1)>;
+
+// `$rs1 >=u $rs2` -> `($rs1 < $rs2) ^ 1`
+def : Pat<(setuge GPR:$rs1, GPR:$rs2), (XORI (SLTU GPR:$rs1, GPR:$rs2), 1)>;
+
+// `$rs1 <=u $rs1` -> `($rs2 < $rs1) ^ 1`
+def : Pat<(setule GPR:$rs1, GPR:$rs2), (XORI (SLTU GPR:$rs2, GPR:$rs1), 1)>;
+
+// `$rs1 > $rs2` -> `$rs2 < $rs1`
+def : Pat<(setgt GPR:$rs1, GPR:$rs2), (SLT GPR:$rs2, GPR:$rs1)>;
+
+// `$rs1 >= $rs2` -> `($rs1 < $rs2) ^ 1`
+def : Pat<(setge GPR:$rs1, GPR:$rs2), (XORI (SLT GPR:$rs1, GPR:$rs2), 1)>;
+
+// `$rs1 <= $rs2` -> `($rs2 < $rs1) ^ 1`
+def : Pat<(setle GPR:$rs1, GPR:$rs2), (XORI (SLT GPR:$rs2, GPR:$rs1), 1)>;
